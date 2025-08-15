@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Performance optimizations */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-display: swap;
+  text-rendering: optimizeSpeed;
+}
+
 /* ISTQB Exam Preparation App Design System */
 
 @layer base {

@@ -1,73 +1,175 @@
-# Welcome to your Lovable project
+# ISTQB Exam Mastery App
 
-## Project info
+A comprehensive web application for practicing ISTQB Foundation Level certification exams with interactive learning features.
 
-**URL**: https://lovable.dev/projects/d95601cd-8ada-4800-98b8-82daf5c273a8
+## Features
 
-## How can I edit this code?
+- 📚 **Question Bank Management**: Upload and manage ISTQB questions from PDF files
+- 🎯 **Practice Exams**: Take timed practice exams with real-time feedback
+- 📊 **Progress Tracking**: Monitor your learning progress with detailed statistics
+- 💡 **Hints & Explanations**: Get helpful hints and detailed explanations for each question
+- 🏆 **Results Analysis**: Review your performance with detailed breakdowns
+- 📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
 
-There are several ways of editing your application.
+## Getting Started
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d95601cd-8ada-4800-98b8-82daf5c273a8) and start prompting.
+- Node.js (v16 or higher)
+- npm or yarn
+- Supabase account (for backend functionality)
 
-Changes made via Lovable will be committed automatically to this repo.
+### Installation
 
-**Use your preferred IDE**
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd istqb-ace-it
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+2. Install dependencies:
+```bash
+npm install
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+3. Set up environment variables:
+Create a `.env` file in the root directory with your Supabase credentials:
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+5. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Supabase Setup
 
-**Use GitHub Codespaces**
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Set up the following database tables:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Questions Table
+```sql
+CREATE TABLE questions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  question TEXT NOT NULL,
+  options TEXT[] NOT NULL,
+  correct_answer INTEGER NOT NULL,
+  explanation TEXT NOT NULL,
+  hint TEXT NOT NULL,
+  category TEXT NOT NULL,
+  difficulty TEXT CHECK (difficulty IN ('Easy', 'Medium', 'Hard')) NOT NULL,
+  source_pdf TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
 
-## What technologies are used for this project?
+### User Stats Table
+```sql
+CREATE TABLE user_stats (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID,
+  total_questions INTEGER DEFAULT 0,
+  correct_answers INTEGER DEFAULT 0,
+  total_points INTEGER DEFAULT 0,
+  current_streak INTEGER DEFAULT 0,
+  best_streak INTEGER DEFAULT 0,
+  average_time INTEGER DEFAULT 0,
+  exams_taken INTEGER DEFAULT 0,
+  last_exam_date TIMESTAMP WITH TIME ZONE
+);
+```
 
-This project is built with:
+### Exam Sessions Table
+```sql
+CREATE TABLE exam_sessions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID,
+  question_ids UUID[] NOT NULL,
+  answers INTEGER[] NOT NULL,
+  score INTEGER DEFAULT 0,
+  time_spent INTEGER DEFAULT 0,
+  total_time INTEGER NOT NULL,
+  completed BOOLEAN DEFAULT FALSE,
+  started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  completed_at TIMESTAMP WITH TIME ZONE
+);
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+3. Set up Supabase Storage bucket named `pdfs` for file uploads
+4. Configure Row Level Security (RLS) policies as needed
 
-## How can I deploy this project?
+## Available Scripts
 
-Simply open [Lovable](https://lovable.dev/projects/d95601cd-8ada-4800-98b8-82daf5c273a8) and click on Share -> Publish.
+- `npm run dev` - Start the development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview the production build
+- `npm run lint` - Run ESLint
 
-## Can I connect a custom domain to my Lovable project?
+## Project Structure
 
-Yes, you can!
+```
+src/
+├── components/     # Reusable UI components
+│   ├── ui/        # shadcn/ui components
+│   └── PDFUpload.tsx
+├── hooks/         # Custom React hooks
+│   ├── useExam.ts
+│   ├── useQuestions.ts
+│   └── useUserStats.ts
+├── lib/           # Utility functions and configurations
+│   ├── supabase.ts
+│   └── utils.ts
+├── pages/         # Page components
+│   ├── Dashboard.tsx
+│   ├── Index.tsx
+│   ├── Quiz.tsx
+│   └── Results.tsx
+└── main.tsx       # Application entry point
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Technologies Used
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- [Vite](https://vitejs.dev/) - Build tool and dev server
+- [React](https://react.dev/) - UI library
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [shadcn/ui](https://ui.shadcn.com/) - UI components
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [React Router](https://reactrouter.com/) - Routing
+- [Supabase](https://supabase.com/) - Backend as a Service
+- [TanStack Query](https://tanstack.com/query) - Data fetching
+- [Lucide React](https://lucide.dev/) - Icons
+
+## Troubleshooting
+
+### Application Crashes on Load
+If the application crashes when you first load it, it's likely due to missing Supabase environment variables. Make sure you have:
+
+1. Created a `.env` file in the root directory
+2. Added your Supabase URL and anonymous key
+3. Restarted the development server
+
+### Build Errors
+If you encounter build errors, try:
+```bash
+npm install
+npm run build
+```
+
+### Database Connection Issues
+Ensure your Supabase project is active and the database tables are properly set up with the correct schema.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.

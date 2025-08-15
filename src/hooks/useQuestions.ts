@@ -10,6 +10,14 @@ export const useQuestions = () => {
   const fetchQuestions = async () => {
     try {
       setLoading(true)
+      
+      // Check if Supabase is properly configured
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        console.warn('Supabase not configured, using mock data')
+        setQuestions([])
+        return
+      }
+      
       const { data, error } = await supabase
         .from('questions')
         .select('*')

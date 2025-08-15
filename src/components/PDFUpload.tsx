@@ -34,6 +34,16 @@ export const PDFUpload = () => {
     setProgress(0)
 
     try {
+      // Check if Supabase is properly configured
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        toast({
+          title: "Supabase Not Configured",
+          description: "Please configure your Supabase environment variables to upload files",
+          variant: "destructive"
+        })
+        return
+      }
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         

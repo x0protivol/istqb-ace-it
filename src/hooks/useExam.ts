@@ -12,6 +12,16 @@ export const useExam = () => {
     try {
       setLoading(true)
       
+      // Check if Supabase is properly configured
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        toast({
+          title: "Supabase Not Configured",
+          description: "Please configure your Supabase environment variables",
+          variant: "destructive"
+        })
+        return null
+      }
+      
       // Fetch random questions
       const { data: questions, error: questionsError } = await supabase
         .from('questions')

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISTQB App Test</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>ISTQB App Connection Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const supabaseUrl = 'https://tdqjvhtanqpbhrbijqzm.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcWp2aHRhbnFwYmhyYmlqcXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyODMzNDYsImV4cCI6MjA3MDg1OTM0Nn0.f033MKao0EH-mzMaEZxM_Vk55XIShmUnIMlUsqm3zpA';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        function addResult(message, type = 'loading') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        async function testConnection() {
+            addResult('🔍 Testing Supabase connection...', 'loading');
+            
+            try {
+                // Test questions table
+                const { data: questions, error: questionsError } = await supabase
+                    .from('questions')
+                    .select('*')
+                    .limit(5);
+                
+                if (questionsError) {
+                    addResult(`❌ Questions table error: ${questionsError.message}`, 'error');
+                    return;
+                }
+                
+                addResult(`✅ Questions table working! Found ${questions.length} questions`, 'success');
+                
+                // Test user_stats table
+                const { data: stats, error: statsError } = await supabase
+                    .from('user_stats')
+                    .select('*')
+                    .limit(1);
+                
+                if (statsError) {
+                    addResult(`❌ User stats table error: ${statsError.message}`, 'error');
+                    return;
+                }
+                
+                addResult(`✅ User stats table working! Found ${stats.length} records`, 'success');
+                
+                // Test exam_sessions table
+                const { data: sessions, error: sessionsError } = await supabase
+                    .from('exam_sessions')
+                    .select('*')
+                    .limit(1);
+                
+                if (sessionsError) {
+                    addResult(`❌ Exam sessions table error: ${sessionsError.message}`, 'error');
+                    return;
+                }
+                
+                addResult(`✅ Exam sessions table working! Found ${sessions.length} records`, 'success');
+                
+                // Test storage bucket
+                const { data: files, error: storageError } = await supabase.storage
+                    .from('pdfs')
+                    .list();
+                
+                if (storageError) {
+                    addResult(`❌ Storage bucket error: ${storageError.message}`, 'error');
+                    return;
+                }
+                
+                addResult(`✅ Storage bucket working! Found ${files.length} files`, 'success');
+                
+                addResult('🎉 All tests passed! Your app is ready to use!', 'success');
+                
+            } catch (error) {
+                addResult(`❌ Connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Run the test when page loads
+        testConnection();
+    </script>
+</body>
+</html> 

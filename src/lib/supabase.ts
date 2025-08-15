@@ -1,9 +1,39 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Check if environment variables are defined
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase environment variables are not defined. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.')
+}
+
+// Create a mock client if environment variables are missing
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : {
+      from: () => ({
+        select: () => ({
+          limit: () => ({
+            single: () => Promise.resolve({ data: null, error: null })
+          }),
+          order: () => ({
+            then: (callback: any) => callback({ data: [], error: null })
+          }),
+          insert: () => ({
+            select: () => Promise.resolve({ data: [], error: null })
+          }),
+          update: () => ({
+            eq: () => Promise.resolve({ error: null })
+          })
+        })
+      }),
+      storage: {
+        from: () => ({
+          upload: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') })
+        })
+      }
+    } as any
 
 // Database types
 export interface Question {
