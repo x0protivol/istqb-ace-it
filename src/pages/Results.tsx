@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -6,63 +7,72 @@ import { Trophy, Target, Clock, TrendingUp, CheckCircle2, XCircle, RotateCcw, Ho
 import { useNavigate } from "react-router-dom";
 
 interface QuestionResult {
-  id: number;
+  id: string;
   question: string;
   userAnswer: number;
   correctAnswer: number;
   isCorrect: boolean;
-  timeSpent: number;
   category: string;
+  explanation: string;
+  difficulty: string;
 }
 
 const Results = () => {
   const navigate = useNavigate();
-  
-  // Sample results data
-  const results = {
-    totalQuestions: 3,
-    correctAnswers: 2,
-    totalTime: 420, // 7 minutes
-    pointsEarned: 20,
-    accuracy: 67,
-    passingScore: 65
-  };
+  const [results, setResults] = useState<any>(null);
+  const [questionResults, setQuestionResults] = useState<QuestionResult[]>([]);
 
-  const questionResults: QuestionResult[] = [
-    {
-      id: 1,
-      question: "Which of the following is a characteristic of good testing?",
-      userAnswer: 0,
-      correctAnswer: 0,
-      isCorrect: true,
-      timeSpent: 45,
-      category: "Fundamentals of Testing"
-    },
-    {
-      id: 2,
-      question: "What is the main purpose of static testing?",
-      userAnswer: 0,
-      correctAnswer: 1,
-      isCorrect: false,
-      timeSpent: 180,
-      category: "Static Testing"
-    },
-    {
-      id: 3,
-      question: "Which testing level focuses on interactions between integrated components?",
-      userAnswer: 1,
-      correctAnswer: 1,
-      isCorrect: true,
-      timeSpent: 195,
-      category: "Test Levels"
+  useEffect(() => {
+    // Get results from localStorage
+    const examResultsData = localStorage.getItem('examResults');
+    if (examResultsData) {
+      const { session, questions } = JSON.parse(examResultsData);
+      
+      const accuracy = Math.round((session.score / questions.length) * 100);
+      const passingScore = 65;
+      
+      setResults({
+        totalQuestions: questions.length,
+        correctAnswers: session.score,
+        totalTime: session.time_spent,
+        pointsEarned: session.score,
+        accuracy,
+        passingScore
+      });
+
+      // Create question results
+      const questionResultsData = questions.map((question: any, index: number) => ({
+        id: question.id,
+        question: question.question,
+        userAnswer: session.answers[index],
+        correctAnswer: question.correct_answer,
+        isCorrect: session.answers[index] === question.correct_answer,
+        category: question.category,
+        explanation: question.explanation,
+        difficulty: question.difficulty
+      }));
+
+      setQuestionResults(questionResultsData);
+    } else {
+      // No results found, redirect to dashboard
+      navigate('/');
     }
-  ];
+  }, [navigate]);
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  if (!results) {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const isPassed = results.accuracy >= results.passingScore;
 
@@ -160,15 +170,21 @@ const Results = () => {
                     </div>
                     <p className="text-sm font-medium">{result.question}</p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>Time: {formatTime(result.timeSpent)}</span>
+                      <span>Difficulty: {result.difficulty}</span>
                       <span className={result.isCorrect ? 'text-success' : 'text-destructive'}>
                         {result.isCorrect ? 'Correct' : 'Incorrect'}
                       </span>
                     </div>
+                    {!result.isCorrect && (
+                      <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+                        <p className="font-medium">Explanation:</p>
+                        <p className="text-muted-foreground">{result.explanation}</p>
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className={`text-lg font-bold ${result.isCorrect ? 'text-success' : 'text-destructive'}`}>
-                      {result.isCorrect ? '+10' : '0'} pts
+                      {result.isCorrect ? '+1' : '0'} pts
                     </div>
                   </div>
                 </div>

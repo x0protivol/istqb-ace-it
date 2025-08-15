@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Upload, BookOpen, Trophy, Clock, TrendingUp, Target } from "lucide-react";
+import { PDFUpload } from "@/components/PDFUpload";
+import { useUserStats } from "@/hooks/useUserStats";
+import { useQuestions } from "@/hooks/useQuestions";
 
 interface DashboardStats {
   totalQuestions: number;
@@ -16,16 +19,12 @@ interface DashboardStats {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [stats] = useState<DashboardStats>({
-    totalQuestions: 150,
-    correctAnswers: 120,
-    averageTime: "45s",
-    streak: 12,
-    points: 2450,
-    level: "Foundation"
-  });
+  const [showUpload, setShowUpload] = useState(false);
+  const { stats, loading: statsLoading } = useUserStats();
+  const { questions, loading: questionsLoading } = useQuestions();
 
-  const accuracy = Math.round((stats.correctAnswers / stats.totalQuestions) * 100);
+  const accuracy = stats ? Math.round((stats.correct_answers / stats.total_questions) * 100) : 0;
+  const hasQuestions = questions.length > 0;
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -48,9 +47,9 @@ const Dashboard = () => {
               <Trophy className="h-4 w-4 text-warning" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.points}</div>
+              <div className="text-2xl font-bold text-primary">{stats?.total_points || 0}</div>
               <p className="text-xs text-muted-foreground">
-                Level: {stats.level}
+                Level: Foundation
               </p>
             </CardContent>
           </Card>
@@ -63,7 +62,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold text-success">{accuracy}%</div>
               <p className="text-xs text-muted-foreground">
-                {stats.correctAnswers}/{stats.totalQuestions} correct
+                {stats?.correct_answers || 0}/{stats?.total_questions || 0} correct
               </p>
             </CardContent>
           </Card>
@@ -74,7 +73,7 @@ const Dashboard = () => {
               <TrendingUp className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.streak}</div>
+              <div className="text-2xl font-bold text-primary">{stats?.current_streak || 0}</div>
               <p className="text-xs text-muted-foreground">
                 questions in a row
               </p>
@@ -87,7 +86,7 @@ const Dashboard = () => {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.averageTime}</div>
+              <div className="text-2xl font-bold">{stats?.average_time || 0}s</div>
               <p className="text-xs text-muted-foreground">
                 per question
               </p>
@@ -132,6 +131,18 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Upload Section */}
+        {showUpload && (
+          <div className="space-y-4">
+            <PDFUpload />
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={() => setShowUpload(false)}>
+                Hide Upload
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="shadow-card hover:shadow-quiz transition-all duration-300 cursor-pointer group">
@@ -145,8 +156,13 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="quiz" size="lg" className="w-full">
-                Choose Files
+              <Button 
+                variant="quiz" 
+                size="lg" 
+                className="w-full"
+                onClick={() => setShowUpload(!showUpload)}
+              >
+                {showUpload ? 'Hide Upload' : 'Choose Files'}
               </Button>
             </CardContent>
           </Card>
@@ -162,12 +178,46 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="primary" size="lg" className="w-full" onClick={() => navigate('/quiz')}>
-                Start Exam
+              <Button 
+                variant="primary" 
+                size="lg" 
+                className="w-full" 
+                onClick={() => navigate('/quiz')}
+                disabled={!hasQuestions || questionsLoading}
+              >
+                {questionsLoading ? 'Loading...' : hasQuestions ? 'Start Exam' : 'Upload Questions First'}
               </Button>
             </CardContent>
           </Card>
         </div>
+
+        {/* Questions Status */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Question Bank Status</CardTitle>
+            <CardDescription>
+              Current status of your question database
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center space-y-2">
+                <div className="text-2xl font-bold text-primary">{questions.length}</div>
+                <div className="text-sm text-muted-foreground">Total Questions</div>
+              </div>
+              <div className="text-center space-y-2">
+                <div className="text-2xl font-bold text-success">{stats?.exams_taken || 0}</div>
+                <div className="text-sm text-muted-foreground">Exams Taken</div>
+              </div>
+              <div className="text-center space-y-2">
+                <div className={`text-2xl font-bold ${hasQuestions ? 'text-success' : 'text-warning'}`}>
+                  {hasQuestions ? 'Ready' : 'Pending'}
+                </div>
+                <div className="text-sm text-muted-foreground">Status</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -4,86 +4,71 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Lightbulb, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Lightbulb, Trophy, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useExam } from "@/hooks/useExam";
+import { useToast } from "@/hooks/use-toast";
 
 interface Question {
-  id: number;
+  id: string;
   question: string;
   options: string[];
-  correctAnswer: number;
+  correct_answer: number;
   explanation: string;
   hint: string;
   category: string;
   difficulty: "Easy" | "Medium" | "Hard";
 }
 
-// Sample ISTQB questions
-const sampleQuestions: Question[] = [
-  {
-    id: 1,
-    question: "Which of the following is a characteristic of good testing?",
-    options: [
-      "Testing shows the presence of defects",
-      "Exhaustive testing is possible", 
-      "Testing can prove that software is defect-free",
-      "Early testing is more expensive"
-    ],
-    correctAnswer: 0,
-    explanation: "Testing can reveal the presence of defects but cannot prove their absence. This is one of the fundamental principles of testing.",
-    hint: "Think about what testing can definitively prove versus what it can only indicate.",
-    category: "Fundamentals of Testing",
-    difficulty: "Easy"
-  },
-  {
-    id: 2,
-    question: "What is the main purpose of static testing?",
-    options: [
-      "To execute test cases",
-      "To find defects without executing code",
-      "To create test data",
-      "To perform load testing"
-    ],
-    correctAnswer: 1,
-    explanation: "Static testing involves examining code, requirements, and design documents without executing the software to find defects early in the development process.",
-    hint: "Consider the difference between static and dynamic testing approaches.",
-    category: "Static Testing",
-    difficulty: "Medium"
-  },
-  {
-    id: 3,
-    question: "Which testing level focuses on interactions between integrated components?",
-    options: [
-      "Unit testing",
-      "Integration testing", 
-      "System testing",
-      "Acceptance testing"
-    ],
-    correctAnswer: 1,
-    explanation: "Integration testing specifically focuses on testing the interfaces and interactions between integrated components or systems.",
-    hint: "Think about what happens when individual components are combined together.",
-    category: "Test Levels",
-    difficulty: "Easy"
-  }
-];
-
 const Quiz = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { examSession, examQuestions, loading, startExam, updateAnswer, finishExam } = useExam();
+  
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes
-  const [score, setScore] = useState(0);
-  const [answers, setAnswers] = useState<number[]>(new Array(sampleQuestions.length).fill(-1));
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  // Initialize exam
+  useEffect(() => {
+    if (!hasStarted && !examSession) {
+      initializeExam();
+    }
+  }, []);
+
+  const initializeExam = async () => {
+    const session = await startExam(60); // 60 questions
+    if (session) {
+      setTimeLeft(session.total_time);
+      setStartTime(Date.now());
+      setHasStarted(true);
+    } else {
+      navigate('/');
+    }
+  };
+
+  // Get current answers from session
+  useEffect(() => {
+    if (examSession && currentQuestion < examSession.answers.length) {
+      const answer = examSession.answers[currentQuestion];
+      setSelectedAnswer(answer >= 0 ? answer : null);
+    }
+  }, [currentQuestion, examSession]);
 
   // Timer effect
   useEffect(() => {
-    if (timeLeft > 0) {
+    if (timeLeft > 0 && hasStarted) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
+    } else if (timeLeft === 0 && hasStarted) {
+      // Time's up!
+      handleFinishExam();
     }
-  }, [timeLeft]);
+  }, [timeLeft, hasStarted]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -91,25 +76,35 @@ const Quiz = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleAnswerSelect = (answerIndex: number) => {
+  const handleAnswerSelect = async (answerIndex: number) => {
     setSelectedAnswer(answerIndex);
-    const newAnswers = [...answers];
-    newAnswers[currentQuestion] = answerIndex;
-    setAnswers(newAnswers);
+    if (examSession) {
+      await updateAnswer(currentQuestion, answerIndex);
+    }
   };
 
   const handleNext = () => {
-    if (selectedAnswer !== null && selectedAnswer === sampleQuestions[currentQuestion].correctAnswer) {
-      setScore(score + 10);
-    }
-    
-    if (currentQuestion < sampleQuestions.length - 1) {
+    if (currentQuestion < examQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-      setSelectedAnswer(answers[currentQuestion + 1] !== -1 ? answers[currentQuestion + 1] : null);
       setShowHint(false);
       setShowExplanation(false);
     } else {
-      // Exam finished, navigate to results
+      handleFinishExam();
+    }
+  };
+
+  const handleFinishExam = async () => {
+    if (!examSession) return;
+    
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+    const completedSession = await finishExam(timeSpent);
+    
+    if (completedSession) {
+      // Store results in localStorage for Results page
+      localStorage.setItem('examResults', JSON.stringify({
+        session: completedSession,
+        questions: examQuestions
+      }));
       navigate('/results');
     }
   };
@@ -117,14 +112,38 @@ const Quiz = () => {
   const handlePrevious = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
-      setSelectedAnswer(answers[currentQuestion - 1] !== -1 ? answers[currentQuestion - 1] : null);
       setShowHint(false);
       setShowExplanation(false);
     }
   };
 
-  const progress = ((currentQuestion + 1) / sampleQuestions.length) * 100;
-  const question = sampleQuestions[currentQuestion];
+  // Loading or no questions state
+  if (loading || !examSession || examQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center space-y-4">
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p>Setting up your exam...</p>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="h-8 w-8 text-warning mx-auto" />
+                <p>No questions available. Please upload questions first.</p>
+                <Button onClick={() => navigate('/')}>Go to Dashboard</Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const progress = ((currentQuestion + 1) / examQuestions.length) * 100;
+  const question = examQuestions[currentQuestion];
+  const timeWarning = timeLeft < 300; // Less than 5 minutes
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -138,9 +157,9 @@ const Quiz = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-primary">
               <Trophy className="h-5 w-5" />
-              <span className="font-semibold">{score} points</span>
+              <span className="font-semibold">Question {currentQuestion + 1}</span>
             </div>
-            <div className="flex items-center gap-2 text-destructive">
+            <div className={`flex items-center gap-2 ${timeWarning ? 'text-destructive animate-pulse' : 'text-muted-foreground'}`}>
               <Clock className="h-5 w-5" />
               <span className="font-semibold">{formatTime(timeLeft)}</span>
             </div>
@@ -150,10 +169,15 @@ const Quiz = () => {
         {/* Progress */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span>Question {currentQuestion + 1} of {sampleQuestions.length}</span>
+            <span>Question {currentQuestion + 1} of {examQuestions.length}</span>
             <span>{Math.round(progress)}% Complete</span>
           </div>
           <Progress value={progress} className="h-3" />
+          {timeWarning && (
+            <div className="text-sm text-destructive font-medium">
+              ⚠️ Less than 5 minutes remaining!
+            </div>
+          )}
         </div>
 
         {/* Question Card */}
@@ -249,14 +273,14 @@ const Quiz = () => {
                 Previous
               </Button>
               
-              <Button
+                <Button
                 variant="primary"
                 onClick={handleNext}
                 disabled={selectedAnswer === null}
                 className="flex items-center gap-2"
               >
-                {currentQuestion === sampleQuestions.length - 1 ? "Finish" : "Next"}
-                {currentQuestion < sampleQuestions.length - 1 && <ChevronRight className="h-4 w-4" />}
+                {currentQuestion === examQuestions.length - 1 ? "Finish" : "Next"}
+                {currentQuestion < examQuestions.length - 1 && <ChevronRight className="h-4 w-4" />}
               </Button>
             </div>
           </CardContent>
