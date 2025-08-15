@@ -1,39 +1,30 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Hardcoded credentials for immediate functionality
+const supabaseUrl = 'https://tdqjvhtanqpbhrbijqzm.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcWp2aHRhbnFwYmhyYmlqcXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyODMzNDYsImV4cCI6MjA3MDg1OTM0Nn0.f033MKao0EH-mzMaEZxM_Vk55XIShmUnIMlUsqm3zpA'
 
-// Check if environment variables are defined
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase environment variables are not defined. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.')
+// Create Supabase client with retry logic
+const createSupabaseClient = () => {
+  try {
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    })
+  } catch (error) {
+    console.error('Failed to create Supabase client:', error)
+    throw error
+  }
 }
 
-// Create a mock client if environment variables are missing
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : {
-      from: () => ({
-        select: () => ({
-          limit: () => ({
-            single: () => Promise.resolve({ data: null, error: null })
-          }),
-          order: () => ({
-            then: (callback: any) => callback({ data: [], error: null })
-          }),
-          insert: () => ({
-            select: () => Promise.resolve({ data: [], error: null })
-          }),
-          update: () => ({
-            eq: () => Promise.resolve({ error: null })
-          })
-        })
-      }),
-      storage: {
-        from: () => ({
-          upload: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') })
-        })
-      }
-    } as any
+export const supabase = createSupabaseClient()
 
 // Database types
 export interface Question {

@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, BookOpen, Trophy, Clock, TrendingUp, Target } from "lucide-react";
+import { Upload, BookOpen, Trophy, Clock, TrendingUp, Target, Brain } from "lucide-react";
 import { PDFUpload } from "@/components/PDFUpload";
+import { AdvancedExamSelector } from "@/components/AdvancedExamSelector";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useQuestions } from "@/hooks/useQuestions";
 
@@ -20,6 +21,7 @@ interface DashboardStats {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [showUpload, setShowUpload] = useState(false);
+  const [testSets, setTestSets] = useState<any>(null);
   const { stats, loading: statsLoading } = useUserStats();
   const { questions, loading: questionsLoading } = useQuestions();
 
@@ -133,11 +135,19 @@ const Dashboard = () => {
 
         {/* Upload Section */}
         {showUpload && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <PDFUpload />
+            <AdvancedExamSelector 
+              testSets={testSets}
+              onStartExam={(questions, difficulty) => {
+                // Handle starting exam with specific questions
+                console.log(`Starting ${difficulty} exam with ${questions.length} questions`);
+                navigate('/quiz');
+              }}
+            />
             <div className="flex justify-center">
               <Button variant="outline" onClick={() => setShowUpload(false)}>
-                Hide Upload
+                Hide Advanced Options
               </Button>
             </div>
           </div>
@@ -170,11 +180,11 @@ const Dashboard = () => {
           <Card className="shadow-card hover:shadow-quiz transition-all duration-300 cursor-pointer group">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 group-hover:text-primary transition-colors">
-                <BookOpen className="h-5 w-5" />
-                Start Practice Exam
+                <Brain className="h-5 w-5" />
+                AI-Generated Exams
               </CardTitle>
               <CardDescription>
-                Begin a timed practice session with hints and explanations
+                Choose from intelligent test sets with different difficulty levels
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -182,10 +192,15 @@ const Dashboard = () => {
                 variant="primary" 
                 size="lg" 
                 className="w-full" 
-                onClick={() => navigate('/quiz')}
-                disabled={!hasQuestions || questionsLoading}
+                onClick={() => setShowUpload(true)}
+                disabled={questionsLoading}
               >
-                {questionsLoading ? 'Loading...' : hasQuestions ? 'Start Exam' : 'Upload Questions First'}
+                {questionsLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Loading...
+                  </div>
+                ) : hasQuestions ? 'View Test Sets' : 'Upload PDF First'}
               </Button>
             </CardContent>
           </Card>

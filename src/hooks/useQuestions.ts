@@ -11,27 +11,31 @@ export const useQuestions = () => {
     try {
       setLoading(true)
       
-      // Check if Supabase is properly configured
-      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-        console.warn('Supabase not configured, using mock data')
-        setQuestions([])
-        return
-      }
-      
       const { data, error } = await supabase
         .from('questions')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching questions:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load questions. Please try again.",
+          variant: "destructive"
+        })
+        setQuestions([])
+        return
+      }
+      
       setQuestions(data || [])
     } catch (error) {
       console.error('Error fetching questions:', error)
       toast({
         title: "Error",
-        description: "Failed to load questions",
+        description: "Failed to load questions. Please try again.",
         variant: "destructive"
       })
+      setQuestions([])
     } finally {
       setLoading(false)
     }

@@ -12,21 +12,35 @@ export const useExam = () => {
     try {
       setLoading(true)
       
-      // Check if Supabase is properly configured
-      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-        toast({
-          title: "Supabase Not Configured",
-          description: "Please configure your Supabase environment variables",
-          variant: "destructive"
-        })
-        return null
+      // Fetch random questions with retry logic
+      let questions, questionsError
+      let retryCount = 0
+      const maxRetries = 3
+
+      while (retryCount < maxRetries) {
+        try {
+          const result = await supabase
+            .from('questions')
+            .select('*')
+            .limit(questionCount)
+
+          questions = result.data
+          questionsError = result.error
+          
+          if (!questionsError) break
+          
+          retryCount++
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+          }
+        } catch (error) {
+          retryCount++
+          if (retryCount >= maxRetries) {
+            throw error
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+        }
       }
-      
-      // Fetch random questions
-      const { data: questions, error: questionsError } = await supabase
-        .from('questions')
-        .select('*')
-        .limit(questionCount)
 
       if (questionsError) throw questionsError
       
