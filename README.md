@@ -33,10 +33,11 @@ npm install
 ```
 
 3. Set up environment variables:
-Create a `.env` file in the root directory with your Supabase credentials:
+Create a `.env` file in the root directory with your Supabase and OpenAI credentials (OpenAI optional but recommended for best results):
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_OPENAI_API_KEY=your_openai_api_key
 ```
 
 4. Start the development server:

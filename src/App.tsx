@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { useEffect } from "react";
+import { startBackgroundTrainer } from "@/lib/background-trainer";
 
 const queryClient = new QueryClient();
 
@@ -13,6 +15,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <AppBackgroundTrainer />
       <BrowserRouter>
         <Routes>
           <Route path="/*" element={<Index />} />
@@ -23,5 +26,12 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+const AppBackgroundTrainer = () => {
+  useEffect(() => {
+    startBackgroundTrainer();
+  }, []);
+  return null;
+};
 
 export default App;

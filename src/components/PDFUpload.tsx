@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useQuestions } from '@/hooks/useQuestions'
 import { supabase } from '@/lib/supabase'
 import { expertAIProcessor, ExpertQuestion, ExpertProcessingResult } from '@/lib/expert-ai-processor'
+import { pdfProcessor } from '@/lib/ai-processor'
 
 interface ParsedQuestion {
   question: string
@@ -139,18 +140,30 @@ export const PDFUpload = () => {
           console.error('AI processing error:', processingError)
           toast({
             title: "AI Processing Failed",
-            description: "Using fallback question generation",
+            description: "Using fallback question generation from PDF content",
             variant: "destructive"
           })
           
-          // Fallback to simulated questions
-          const parsedQuestions = await simulatePDFParsing(file.name)
-          if (parsedQuestions.length > 0) {
-            await addQuestions(parsedQuestions.map(q => ({
-              ...q,
-              source_pdf: fileName
-            })))
-            setUploadedFiles(prev => [...prev, file.name])
+          // Fallback: heuristic generation from PDF content (no static samples)
+          try {
+            const buffer = await file.arrayBuffer()
+            const content = await pdfProcessor.extractContent(buffer)
+            const { questions } = await pdfProcessor.generateQuestions(content, fileName)
+            if (questions.length > 0) {
+              await addQuestions(questions.map(q => ({
+                question: q.question,
+                options: q.options,
+                correct_answer: q.correct_answer,
+                explanation: q.explanation,
+                hint: q.hint,
+                category: q.category,
+                difficulty: q.difficulty,
+                source_pdf: q.source_pdf
+              })))
+              setUploadedFiles(prev => [...prev, file.name])
+            }
+          } catch (fallbackError) {
+            console.error('Fallback generation error:', fallbackError)
           }
         }
 
@@ -173,58 +186,10 @@ export const PDFUpload = () => {
     }
   }
 
-  // Simulate PDF parsing - in a real app, you'd use a PDF parsing library
+  // Simulate PDF parsing - retained but unused (we now do heuristic fallback based on actual PDF content)
   const simulatePDFParsing = async (fileName: string): Promise<ParsedQuestion[]> => {
-    // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Return sample questions based on filename
-    const sampleQuestions: ParsedQuestion[] = [
-      {
-        question: "What is the primary objective of software testing?",
-        options: [
-          "To find all defects in the software",
-          "To prove that the software is bug-free",
-          "To reduce the risk of failures in operation",
-          "To increase development speed"
-        ],
-        correct_answer: 2,
-        explanation: "The primary objective of testing is to reduce the risk of failures occurring in an operational environment by finding defects and providing information about software quality.",
-        hint: "Focus on risk reduction rather than proving perfection.",
-        category: "Fundamentals of Testing",
-        difficulty: "Medium"
-      },
-      {
-        question: "Which of the following is NOT a principle of testing?",
-        options: [
-          "Testing shows the presence of defects",
-          "Exhaustive testing is possible",
-          "Early testing saves time and money",
-          "Defect clustering"
-        ],
-        correct_answer: 1,
-        explanation: "Exhaustive testing is impossible because it would require testing all possible combinations of inputs and preconditions, which is not feasible for non-trivial software.",
-        hint: "Think about what is practically impossible in testing.",
-        category: "Testing Principles",
-        difficulty: "Easy"
-      },
-      {
-        question: "What is the main characteristic of black-box testing?",
-        options: [
-          "Tests are based on code structure",
-          "Tests are based on specifications and requirements",
-          "Tests require knowledge of internal design",
-          "Tests focus on code coverage"
-        ],
-        correct_answer: 1,
-        explanation: "Black-box testing is based on specifications, requirements, and the functionality of the software without knowledge of its internal structure.",
-        hint: "Consider what information is used to design the tests.",
-        category: "Test Design Techniques",
-        difficulty: "Easy"
-      }
-    ]
-
-    return sampleQuestions
+    return []
   }
 
   return (
