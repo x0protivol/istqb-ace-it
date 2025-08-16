@@ -13,9 +13,10 @@ async function ensurePdfJs() {
 	}
 	if (!pdfWorkerConfigured && pdfjsLib) {
 		try {
-			// Use a locally-bundled worker asset via Vite
+			// Use bundled worker asset URL at runtime
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 			// @ts-ignore
+			// @vite-ignore
 			pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.js', import.meta.url).toString();
 			pdfWorkerConfigured = true;
 		} catch (_) {
