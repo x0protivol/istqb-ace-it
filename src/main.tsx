@@ -15,7 +15,8 @@ if (!import.meta.env.PROD && 'serviceWorker' in navigator) {
 // Register service worker only in production to avoid interfering with Vite dev
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
-		navigator.serviceWorker.register('/sw.js')
+		const swPath = `${import.meta.env.BASE_URL || '/'}sw.js`;
+		navigator.serviceWorker.register(swPath)
 			.then((registration) => {
 				console.log('SW registered: ', registration);
 			})
