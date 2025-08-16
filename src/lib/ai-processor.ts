@@ -10,7 +10,9 @@ async function ensurePdfJs() {
 	}
 	if (!pdfWorkerConfigured && pdfjsLib) {
 		try {
-			pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.54/legacy/build/pdf.worker.min.js';
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
+			pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.js', import.meta.url).toString();
 			pdfWorkerConfigured = true;
 		} catch (_) {}
 	}

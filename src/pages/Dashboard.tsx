@@ -8,6 +8,7 @@ import { PDFUpload } from "@/components/PDFUpload";
 import { AdvancedExamSelector } from "@/components/AdvancedExamSelector";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useQuestions } from "@/hooks/useQuestions";
+import { useQuestionsCount } from "@/hooks/useQuestionsCount";
 
 interface DashboardStats {
   totalQuestions: number;
@@ -23,10 +24,10 @@ const Dashboard = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [testSets, setTestSets] = useState<any>(null);
   const { stats, loading: statsLoading } = useUserStats();
-  const { questions, loading: questionsLoading } = useQuestions();
+  const { count: questionsCount, loading: countLoading } = useQuestionsCount();
 
-  const accuracy = stats ? Math.round((stats.correct_answers / stats.total_questions) * 100) : 0;
-  const hasQuestions = questions.length > 0;
+  const accuracy = stats ? Math.round((stats.correct_answers / (stats.total_questions || 1)) * 100) : 0;
+  const hasQuestions = questionsCount > 0;
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -193,9 +194,9 @@ const Dashboard = () => {
                 size="lg" 
                 className="w-full" 
                 onClick={() => setShowUpload(true)}
-                disabled={questionsLoading}
+                disabled={countLoading}
               >
-                {questionsLoading ? (
+                {countLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Loading...

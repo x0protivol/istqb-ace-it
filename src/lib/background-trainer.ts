@@ -82,13 +82,8 @@ async function runOnce() {
 }
 
 export function startBackgroundTrainer() {
-	if (trainerStarted) return
-	trainerStarted = true
-	// Avoid multiple intervals across hot reloads
-	// 30 minutes cadence for steady progress (48 runs/day)
-	trainerInterval = window.setInterval(runOnce, 30 * 60 * 1000)
-	// Also kick off immediately on load
-	runOnce()
+	// Disabled by default to keep UI responsive; backend agent handles continuous gen
+	return
 }
 
 export function stopBackgroundTrainer() {

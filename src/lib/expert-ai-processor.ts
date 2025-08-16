@@ -3,7 +3,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 // PDF.js for real PDF text extraction in the browser
-// Using legacy build + CDN worker for broad compatibility with Vite
+// Using local worker asset for reliability with Vite
 let pdfjsLib: any = null;
 let pdfWorkerConfigured = false;
 
@@ -13,11 +13,13 @@ async function ensurePdfJs() {
 	}
 	if (!pdfWorkerConfigured && pdfjsLib) {
 		try {
-			// Point worker to CDN to avoid bundler hassles
-			pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.54/legacy/build/pdf.worker.min.js';
+			// Use a locally-bundled worker asset via Vite
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
+			pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.js', import.meta.url).toString();
 			pdfWorkerConfigured = true;
 		} catch (_) {
-			// no-op; pdf.js will still try to work in same-thread mode if possible
+			// no-op; pdf.js may fallback
 		}
 	}
 }
@@ -264,7 +266,7 @@ Return JSON array of objects with keys: question, options, correct_answer, expla
 			.filter((s) => s.length > 30 && s.length < 300);
 
 		const take = (arr: string[], count: number) => arr.slice(0, Math.max(0, Math.min(count, arr.length)));
-		const base = take(sentences, 60);
+		const base = take(sentences, 36);
 
 		const categories = [
 			'Fundamentals of Testing',
@@ -298,7 +300,7 @@ Return JSON array of objects with keys: question, options, correct_answer, expla
 			};
 		};
 
-		return base.map(toQuestion).slice(0, 36);
+		return base.map(toQuestion);
 	}
 
 	// Create expert test sets
